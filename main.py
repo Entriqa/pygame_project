@@ -1,6 +1,7 @@
 import pygame
 import os
 import sys
+import random
 
 WIDTH = 300
 HEIGHT = 600
@@ -22,6 +23,22 @@ blocks_group = pygame.sprite.Group()
 def terminate():
     pygame.quit()
     sys.exit()
+
+
+class Camera:
+    def __init__(self, field_size):
+        self.dy = 0
+        self.camera_phase = 0
+
+    # Сдвинуть объект obj на смещение камеры
+    def apply(self, obj, y):
+        obj.rect.y += self.dy
+        self.camera_phase = 0
+        return obj.rect.x, obj.rect.y
+
+    def update(self, target, time):
+        self.camera_phase += time
+        self.dy = self.camera_phase + (GRAVITY * self.camera_phase ** 2) / 2
 
 
 def load_image(name, colorkey=None):
@@ -85,6 +102,7 @@ class Player(pygame.sprite.Sprite):
         else:
             self.move_phase += time
 
+
         self.pos[0] = self.start_pos[0] + self.move_speed * self.move_phase * horizontal_move
 
         self.prev_horizontal_move = horizontal_move
@@ -98,8 +116,6 @@ class Player(pygame.sprite.Sprite):
                             (GRAVITY * self.jump_phase ** 2) / 2)
 
         self.rect.topleft = self.pos
-
-
 
 
 class Blocks(pygame.sprite.Sprite):
@@ -120,6 +136,10 @@ block = Blocks((150, HEIGHT - 150))
 block2 = Blocks((150, HEIGHT - 300))
 block3 = Blocks((90, HEIGHT - 450))
 block4 = Blocks((90, HEIGHT - 600))
+camera = Camera((WIDTH, HEIGHT))
+
+
+
 
 running = True
 while running:
@@ -138,12 +158,18 @@ while running:
                 move = 0
             if event.key == pygame.K_RIGHT:
                 move = 0
+    if 180 < player.rect.y < 200:
+        camera.update(player, time)
+        for sprite in all_sprites:
+            if not isinstance(sprite, Player):
+                camera.apply(sprite, player.rect.y)
 
     player_group.update(time, move)
 
     screen.fill(pygame.Color('white'))
-    player_group.draw(screen)
     blocks_group.draw(screen)
+    player_group.draw(screen)
+
 
     pygame.display.flip()
 terminate()
