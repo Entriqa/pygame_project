@@ -58,9 +58,34 @@ player_image = load_image('hero2.png')
 block_image = load_image('block.png')
 
 
+class Camera:
+    def __init__(self, target=None, limit=500):
+        self.y = 0
+        self.set_target(target, limit)
+
+    def set_target(self, target, limit):
+        self.target = target
+        self.limit = limit
+
+    def apply(self, group):
+        for sprite in group:
+            if sprite != self.target:
+                sprite.rect.y = sprite.pos[1] + self.y
+
+    def set_position(self, pos,):
+        if pos[1] <= self.limit:
+            self.y = self.limit - pos[1]
+            self.target.rect.y = self.limit
+        else:
+            self.target.rect.y = pos[1] + self.y
+
+        self.target.rect.x = pos[0]
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos):
-        super(Player, self).__init__(player_group, all_sprites)
+        super().__init__(player_group, all_sprites)
+
         self.image = player_image
         self.pos = self.x, self.y = list(pos)
         self.y2 = self.y
@@ -90,28 +115,31 @@ class Player(pygame.sprite.Sprite):
         self.prev_horizontal_move = horizontal_move
 
         platform = pygame.sprite.spritecollideany(self, blocks_group)
-        if platform and pygame.sprite.collide_mask(self, platform) and self.jump_speed - GRAVITY * self.jump_phase < 0 and self.rect.bottom < platform.rect.bottom:
+        if platform and pygame.sprite.collide_mask(self,
+                                                   platform) and self.jump_speed - GRAVITY * self.jump_phase < 0 and self.rect.bottom < platform.rect.bottom:
             self.jump_phase = 0
-            self.start_pos[1] = platform.rect.top - self.rect.height - 1
+            self.start_pos[1] = platform.pos[1] - self.rect.height - 1
 
         self.pos[1] = (self.start_pos[1] - self.jump_speed * self.jump_phase +
-                            (GRAVITY * self.jump_phase ** 2) / 2)
+                       (GRAVITY * self.jump_phase ** 2) / 2)
 
-        self.rect.topleft = self.pos
-
-
+        cam.set_position(self.pos)
 
 
 class Blocks(pygame.sprite.Sprite):
     def __init__(self, pos=(90, HEIGHT - 50)):
-        super(Blocks, self).__init__(blocks_group, all_sprites)
+        super().__init__(blocks_group, all_sprites)
+        self.pos = pos
         self.x, self.y = pos
         self.image = block_image
         self.rect = self.image.get_rect().move(self.x, self.y)
 
 
 start_screen()
+cam = Camera()
+
 player = Player((100, HEIGHT - 90))
+cam.set_target(player, 200)
 
 move = 0
 
@@ -120,6 +148,10 @@ block = Blocks((150, HEIGHT - 150))
 block2 = Blocks((150, HEIGHT - 300))
 block3 = Blocks((90, HEIGHT - 450))
 block4 = Blocks((90, HEIGHT - 600))
+Blocks((90, -100))
+Blocks((90, -200))
+Blocks((180, -350))
+Blocks((90, -500))
 
 running = True
 while running:
@@ -140,6 +172,8 @@ while running:
                 move = 0
 
     player_group.update(time, move)
+
+    cam.apply(blocks_group)
 
     screen.fill(pygame.Color('white'))
     player_group.draw(screen)
