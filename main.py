@@ -33,12 +33,11 @@ class Camera:
     # Сдвинуть объект obj на смещение камеры
     def apply(self, obj, y):
         obj.rect.y += self.dy
-        self.camera_phase = 0
         return obj.rect.x, obj.rect.y
 
     def update(self, target, time):
         self.camera_phase += time
-        self.dy = self.camera_phase + (GRAVITY * self.camera_phase ** 2) / 2
+        self.dy = self.camera_phase - (GRAVITY * self.camera_phase ** 2) / 2
 
 
 def load_image(name, colorkey=None):
@@ -158,7 +157,7 @@ while running:
                 move = 0
             if event.key == pygame.K_RIGHT:
                 move = 0
-    if 180 < player.rect.y < 200:
+    if 100 < player.rect.y < 200:
         camera.update(player, time)
         for sprite in all_sprites:
             if not isinstance(sprite, Player):
