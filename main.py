@@ -174,13 +174,13 @@ move = 0
 block1 = Blocks()
 block = Blocks((150, HEIGHT - 150))
 block2 = Blocks((150, HEIGHT - 300))
-block3 = Blocks((90, HEIGHT - 450))
+block3 = Blocks((60, HEIGHT - 450))
 block4 = Blocks((90, HEIGHT - 600))
-Blocks((90, -100))
-Blocks((90, -200))
+Blocks((30, -100))
+Blocks((50, -200))
 Blocks((180, -350))
 last_block = Blocks((90, -500))
-Blocks((90, -601))
+Blocks((70, -601))
 last_y = -601
 
 
