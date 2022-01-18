@@ -182,10 +182,11 @@ Blocks((180, -350))
 last_block = Blocks((90, -500))
 Blocks((70, -601))
 last_y = -601
+last_killed_block = HEIGHT - 90
 
 
 running = True
-while running and player.pos[1] <= 600:
+while running:
     time = clock.tick() / 1000.0
 
     for event in pygame.event.get():
@@ -202,9 +203,10 @@ while running and player.pos[1] <= 600:
             if event.key == pygame.K_RIGHT:
                 move = 0
 
-    if player.pos[1] > 570:
+    if player.pos[1] > last_killed_block:
         loss_screen()
         player.kill()
+
 
     player_group.update(time, move)
 
@@ -216,6 +218,7 @@ while running and player.pos[1] <= 600:
 
     for blocks in blocks_group:
         if player.pos[1] - blocks.pos[1] <= -650:
+            last_killed_block = blocks.pos[1]
             blocks.kill()
 
     screen.fill(pygame.Color('white'))
