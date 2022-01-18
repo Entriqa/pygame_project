@@ -6,16 +6,21 @@ import sys
 
 WIDTH = 300
 HEIGHT = 600
+
 GRAVITY = 300
 INCREMENT_VELOCITY_X = 0.5
 MAX_VELOCITY_X = 4
 MAX_VELOCITY_Y = 20
 VELOCITY_X_SLOW_DOWN = 1.05
+
 FPS = 50
+
 pygame.init()
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 player = None
+
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 blocks_group = pygame.sprite.Group()
@@ -42,8 +47,16 @@ def load_image(name, colorkey=None):
     return image
 
 
+def load_sound(name):
+    fullname = os.path.join('data', name)
+    if not os.path.isfile(fullname):
+        print(f"Файл звука '{fullname}' не найден")
+        sys.exit()
+    return pygame.mixer.Sound(fullname)
+
+
 def start_screen():
-    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+    fon = pygame.transform.scale(load_image('start_screen.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
     while True:
         for event in pygame.event.get():
@@ -52,6 +65,17 @@ def start_screen():
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
                 return
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def loss_screen():
+    fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -112,13 +136,14 @@ class Player(pygame.sprite.Sprite):
         else:
             self.move_phase += time
 
-        self.pos[0] = self.start_pos[0] + self.move_speed * self.move_phase * horizontal_move
+        self.pos[0] = (self.start_pos[0] + self.move_speed * self.move_phase * horizontal_move) % 300
 
         self.prev_horizontal_move = horizontal_move
 
         platform = pygame.sprite.spritecollideany(self, blocks_group)
-        if platform and pygame.sprite.collide_mask(self,
-                                                   platform) and self.jump_speed - GRAVITY * self.jump_phase < 0 and self.rect.bottom < platform.rect.bottom:
+        if platform and pygame.sprite.collide_mask(self, platform) and \
+                self.jump_speed - GRAVITY * self.jump_phase < 0 and \
+                self.rect.bottom < platform.rect.bottom:
             self.jump_phase = 0
             self.start_pos[1] = platform.pos[1] - self.rect.height - 1
 
@@ -129,12 +154,13 @@ class Player(pygame.sprite.Sprite):
 
 
 class Blocks(pygame.sprite.Sprite):
-    def __init__(self, pos=(90, HEIGHT - 50)):
+    def __init__(self, pos=(90, HEIGHT - 55)):
         super().__init__(blocks_group, all_sprites)
         self.pos = pos
         self.x, self.y = pos
         self.image = block_image
         self.rect = self.image.get_rect().move(self.x, self.y)
+
 
 
 start_screen()
@@ -176,19 +202,30 @@ while running and player.pos[1] <= 600:
             if event.key == pygame.K_RIGHT:
                 move = 0
 
+    if player.pos[1] > 570:
+        loss_screen()
+        player.kill()
+
     player_group.update(time, move)
 
     cam.apply(blocks_group)
+
     if abs(last_y - player.pos[1]) > 600:
-        last_y -= random.randint(50, 100)
+        last_y -= random.randint(50, 150)
         Blocks((random.randint(0, 300 - 50), last_y))
 
-
+    for blocks in blocks_group:
+        if player.pos[1] - blocks.pos[1] <= -650:
+            blocks.kill()
 
     screen.fill(pygame.Color('white'))
+
+    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
 
     blocks_group.draw(screen)
     player_group.draw(screen)
 
     pygame.display.flip()
+
 terminate()
