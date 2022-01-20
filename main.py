@@ -24,6 +24,7 @@ player = None
 all_sprites = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 blocks_group = pygame.sprite.Group()
+texts_group = pygame.sprite.Group()
 
 
 def terminate():
@@ -53,6 +54,28 @@ def load_sound(name):
         print(f"Файл звука '{fullname}' не найден")
         sys.exit()
     return pygame.mixer.Sound(fullname)
+
+
+class Text(pygame.sprite.Sprite):
+    def __init__(self, text, pos, size=30,
+                 font=None, color=(0, 0, 0)):
+        super().__init__(pos, texts_group, all_sprites)
+        self.pos = pos
+        self.color = color
+        self.size = size
+        self.font = font
+        self.set(text)
+
+    def set(self, text):
+        if text:
+            font_type = os.path.join('data', 'text_font.ttf')
+            if not os.path.isfile(font_type):
+                print(f"Файл текста '{font_type}' не найден")
+                sys.exit()
+            font_type = pygame.font.Font(font_type, self.size)
+            text_surf = self.font_type.render(str(text), True, self.color)
+            w, h = text_surf.get_size
+            screen.blit(text_surf, (self.pos))
 
 
 def start_screen():
