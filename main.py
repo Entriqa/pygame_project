@@ -7,24 +7,13 @@ import sys
 WIDTH = 300
 HEIGHT = 600
 
-GRAVITY = 300
+GRAVITY = 500
 INCREMENT_VELOCITY_X = 0.5
 MAX_VELOCITY_X = 4
 MAX_VELOCITY_Y = 20
 VELOCITY_X_SLOW_DOWN = 1.05
 
 FPS = 50
-
-pygame.init()
-
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-clock = pygame.time.Clock()
-player = None
-
-all_sprites = pygame.sprite.Group()
-player_group = pygame.sprite.Group()
-blocks_group = pygame.sprite.Group()
-texts_group = pygame.sprite.Group()
 
 
 def terminate():
@@ -59,7 +48,7 @@ def load_sound(name):
 class Text(pygame.sprite.Sprite):
     def __init__(self, text, pos, size=30,
                  font=None, color=(0, 0, 0)):
-        super().__init__(pos, texts_group, all_sprites)
+        super().__init__(pos, game.texts_group, game.all_sprites)
         self.pos = pos
         self.color = color
         self.size = size
@@ -75,12 +64,12 @@ class Text(pygame.sprite.Sprite):
             font_type = pygame.font.Font(font_type, self.size)
             text_surf = self.font_type.render(str(text), True, self.color)
             w, h = text_surf.get_size
-            screen.blit(text_surf, (self.pos))
+            game.screen.blit(text_surf, (self.pos))
 
 
 def start_screen():
     fon = pygame.transform.scale(load_image('start_screen.jpg'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
+    game.screen.blit(fon, (0, 0))
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -89,28 +78,14 @@ def start_screen():
                     event.type == pygame.MOUSEBUTTONDOWN:
                 return
         pygame.display.flip()
-        clock.tick(FPS)
-
-
-def loss_screen():
-    fon = pygame.transform.scale(load_image('fon.png'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-        pygame.display.flip()
-        clock.tick(FPS)
-
-
-player_image = load_image('hero2.png')
-block_image = load_image('block.png')
+        game.clock.tick(FPS)
 
 
 class Camera:
     def __init__(self, target=None, limit=500):
         self.y = 0
-        self.set_target(target, limit)
+        self.target = target
+        self.limit = limit
 
     def set_target(self, target, limit):
         self.target = target
@@ -121,19 +96,20 @@ class Camera:
             if sprite != self.target:
                 sprite.rect.y = sprite.pos[1] + self.y
 
-    def set_position(self, pos,):
-        if pos[1] <= self.limit:
+    def set_position(self, pos):
+        if pos[1] + self.y <= self.limit:
             self.y = self.limit - pos[1]
-            self.target.rect.y = self.limit
-        else:
-            self.target.rect.y = pos[1] + self.y
+
+        self.target.rect.y = pos[1] + self.y
 
         self.target.rect.x = pos[0]
 
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos):
-        super().__init__(player_group, all_sprites)
+        super().__init__(game.player_group, game.all_sprites)
+
+        self.is_alive = True
 
         self.image = player_image
         self.pos = self.x, self.y = list(pos)
@@ -144,7 +120,7 @@ class Player(pygame.sprite.Sprite):
         self.move_speed = 200
 
         self.jump_phase = 0
-        self.jump_speed = 300
+        self.jump_speed = 450
         self.start_pos = list(self.rect.topleft)
 
         self.prev_horizontal_move = 0
@@ -163,7 +139,7 @@ class Player(pygame.sprite.Sprite):
 
         self.prev_horizontal_move = horizontal_move
 
-        platform = pygame.sprite.spritecollideany(self, blocks_group)
+        platform = pygame.sprite.spritecollideany(self, game.blocks_group)
         if platform and pygame.sprite.collide_mask(self, platform) and \
                 self.jump_speed - GRAVITY * self.jump_phase < 0 and \
                 self.rect.bottom < platform.rect.bottom:
@@ -173,85 +149,113 @@ class Player(pygame.sprite.Sprite):
         self.pos[1] = (self.start_pos[1] - self.jump_speed * self.jump_phase +
                        (GRAVITY * self.jump_phase ** 2) / 2)
 
-        cam.set_position(self.pos)
+        game.cam.set_position(self.pos)
 
 
-class Blocks(pygame.sprite.Sprite):
+class Block(pygame.sprite.Sprite):
     def __init__(self, pos=(90, HEIGHT - 55)):
-        super().__init__(blocks_group, all_sprites)
+        super().__init__(game.blocks_group, game.all_sprites)
         self.pos = pos
         self.x, self.y = pos
         self.image = block_image
         self.rect = self.image.get_rect().move(self.x, self.y)
 
 
+class Game:
+    def __init__(self):
+        self.is_running = True
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.clock = pygame.time.Clock()
+        self.player = None
+        self.cam = None
+        self.last_block = self.last_y = self.last_killed_block = None
+
+        self.all_sprites = pygame.sprite.Group()
+        self.player_group = pygame.sprite.Group()
+        self.blocks_group = pygame.sprite.Group()
+        self.texts_group = pygame.sprite.Group()
+
+    def restart_game(self):
+        for sprite in self.all_sprites.sprites():
+            sprite.kill()
+
+        self.cam = Camera()
+
+        self.player = Player((100, HEIGHT - 90))
+        self.cam.set_target(self.player, 100)
+
+        Block()
+        Block((150, HEIGHT - 150))
+        Block((150, HEIGHT - 300))
+        Block((60, HEIGHT - 450))
+        Block((90, HEIGHT - 600))
+        Block((30, -100))
+        Block((50, -200))
+        Block((180, -350))
+        self.last_block = Block((90, -500))
+        Block((70, -601))
+        self.last_y = -601
+        self.last_killed_block = HEIGHT - 90
+
+    def start(self):
+        move = 0
+
+        while self.is_running:
+            time = self.clock.tick() / 1000.0
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.is_running = False
+                if event.type == pygame.KEYDOWN:
+                    if not self.player.is_alive:
+                        self.restart_game()
+
+                    if event.key == pygame.K_LEFT:
+                        move = -1
+                    if event.key == pygame.K_RIGHT:
+                        move = 1
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_LEFT:
+                        move = 0
+                    if event.key == pygame.K_RIGHT:
+                        move = 0
+
+            if self.player.pos[1] > self.last_killed_block:
+                self.player.kill()
+                self.player.is_alive = False
+
+            self.player_group.update(time, move)
+
+            self.cam.apply(self.blocks_group)
+
+            if abs(self.last_y - self.player.pos[1]) > 600:
+                self.last_y -= random.randint(50, 150)
+                Block((random.randint(0, 300 - 50), self.last_y))
+
+            for block in self.blocks_group:
+                if self.player.pos[1] - block.pos[1] <= -650:
+                    last_killed_block = block.pos[1]
+                    block.kill()
+
+            self.screen.fill(pygame.Color('white'))
+
+            self.screen.blit(background, (0, 0))
+
+            self.blocks_group.draw(self.screen)
+            self.player_group.draw(self.screen)
+
+            pygame.display.flip()
+
+
+pygame.init()
+game = Game()
+
+player_image = load_image('hero2.png')
+block_image = load_image('block.png')
+background = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+
+game.restart_game()
 
 start_screen()
-cam = Camera()
-
-player = Player((100, HEIGHT - 90))
-cam.set_target(player, 200)
-
-move = 0
-
-block1 = Blocks()
-block = Blocks((150, HEIGHT - 150))
-block2 = Blocks((150, HEIGHT - 300))
-block3 = Blocks((60, HEIGHT - 450))
-block4 = Blocks((90, HEIGHT - 600))
-Blocks((30, -100))
-Blocks((50, -200))
-Blocks((180, -350))
-last_block = Blocks((90, -500))
-Blocks((70, -601))
-last_y = -601
-last_killed_block = HEIGHT - 90
-
-
-running = True
-while running:
-    time = clock.tick() / 1000.0
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                move = -1
-            if event.key == pygame.K_RIGHT:
-                move = 1
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_LEFT:
-                move = 0
-            if event.key == pygame.K_RIGHT:
-                move = 0
-
-    if player.pos[1] > last_killed_block:
-        loss_screen()
-        player.kill()
-
-
-    player_group.update(time, move)
-
-    cam.apply(blocks_group)
-
-    if abs(last_y - player.pos[1]) > 600:
-        last_y -= random.randint(50, 150)
-        Blocks((random.randint(0, 300 - 50), last_y))
-
-    for blocks in blocks_group:
-        if player.pos[1] - blocks.pos[1] <= -650:
-            last_killed_block = blocks.pos[1]
-            blocks.kill()
-
-    screen.fill(pygame.Color('white'))
-
-    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-
-    blocks_group.draw(screen)
-    player_group.draw(screen)
-
-    pygame.display.flip()
-
+game.start()
 terminate()
