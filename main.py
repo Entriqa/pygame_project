@@ -84,10 +84,10 @@ def start_screen():
 def lossed_screen():
     fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
     game.screen.blit(fon, (0, 0))
-    file = open('record.txt')
+    file = open('data/record.txt')
     n = int(file.readline())
     file.close()
-    f = open('record.txt', 'w')
+    f = open('data/record.txt', 'w')
     f.write(str(max(int(game.score), n)))
     f.close()
 
