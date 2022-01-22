@@ -98,8 +98,9 @@ def lossed_screen():
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
                 return
-        text = Text('Score: ' + str(int(game.score)), (100, 250))
-        text2 = Text('Record: ' + str(max(int(game.score), n)), (100, 290))
+        game_over = Text('GAME OVER', (50, 150), size=50)
+        text = Text('score: ' + str(int(game.score)), (50, 250), size=50)
+        text2 = Text('record: ' + str(max(int(game.score), n)), (50, 290), size=50)
         pygame.display.flip()
         game.clock.tick(FPS)
 
@@ -268,12 +269,13 @@ class Game:
 
             if abs(self.last_y - self.player.pos[1]) > 600:
                 self.last_y -= random.randint(50, 150)
-                Block((random.randint(0, 300 - 50), self.last_y))
+                Block((random.randint(5, 300 - 70), self.last_y))
 
             for block in self.blocks_group:
-                if self.player.pos[1] - block.pos[1] <= -500:
-                    last_killed_block = block.pos[1]
-                    block.kill()
+                if self.player.pos[1] < 0:
+                    if self.player.pos[1] - block.pos[1] <= -500:
+                        last_killed_block = block.pos[1]
+                        block.kill()
 
             self.screen.fill(pygame.Color('white'))
 
