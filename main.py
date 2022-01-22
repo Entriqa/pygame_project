@@ -98,7 +98,7 @@ def lossed_screen():
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
                 return
-        game_over = Text('GAME OVER', (50, 150), size=50)
+        game_over = Text('GAME OVER', (45, 150), size=50)
         text = Text('score: ' + str(int(game.score)), (50, 250), size=50)
         text2 = Text('record: ' + str(max(int(game.score), n)), (50, 290), size=50)
         pygame.display.flip()
